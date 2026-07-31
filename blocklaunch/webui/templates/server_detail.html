@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}{{ server.name }} — BlockLaunch{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1>
+        <span class="status-dot {{ server.status }}"></span>
+        {{ server.name }}
+    </h1>
+    <a href="/" class="btn btn-outline">← Back</a>
+</div>
+
+<!-- Server Info -->
+<div class="card">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+        <div>
+            <div style="color: var(--text-secondary); font-size: 0.8rem;">MODE</div>
+            <span class="badge badge-{{ server.mode }}">{{ server.mode }}</span>
+        </div>
+        <div>
+            <div style="color: var(--text-secondary); font-size: 0.8rem;">TYPE</div>
+            <div>{{ server.type }}</div>
+        </div>
+        <div>
+            <div style="color: var(--text-secondary); font-size: 0.8rem;">VERSION</div>
+            <div>{{ server.version }}</div>
+        </div>
+        <div>
+            <div style="color: var(--text-secondary); font-size: 0.8rem;">PORT</div>
+            <div>:{{ server.port }}</div>
+        </div>
+        <div>
+            <div style="color: var(--text-secondary); font-size: 0.8rem;">MEMORY</div>
+            <div>{{ server.memory }}</div>
+        </div>
+        <div>
+            <div style="color: var(--text-secondary); font-size: 0.8rem;">STATUS</div>
+            <span class="badge badge-{{ server.status }}">{{ server.status }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="card">
+    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        <button class="btn btn-success" onclick="startServer()">▶️ Start</button>
+        <button class="btn btn-error" onclick="stopServer()">⏹ Stop</button>
+        <button class="btn btn-warning" onclick="restartServer()">🔄 Restart</button>
+        <button class="btn btn-primary" onclick="toggleConsole()">💻 Console</button>
+        <a href="/players/{{ server.name }}" class="btn btn-primary">👥 Players</a>
+        <a href="/plugins" class="btn btn-primary">🔌 Plugins</a>
+        <button class="btn btn-outline" onclick="createBackup()">💾 Backup</button>
+        <button class="btn btn-error" onclick="deleteServer()">🗑 Delete</button>
+    </div>
+</div>
+
+<!-- Console (hidden by default) -->
+<div id="console-section" style="display: none;">
+    <div class="card" style="padding: 0;">
+        <div class="card-header" style="padding: 0.5rem 1rem;">
+            <span class="card-title">💻 Server Console</span>
+            <button class="btn btn-sm btn-outline" onclick="toggleConsole()">✕</button>
+        </div>
+        <div class="console-container">
+            <div class="console-output" id="console-output"></div>
+            <div class="console-input">
+                <input type="text" id="console-input" placeholder="Type a command and press Enter..."
+                       onkeydown="if(event.key==='Enter')sendCommand()">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">⚡ Quick Actions</span>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('time set day')">☀️ Day</button>
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('time set night')">🌙 Night</button>
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('weather clear')">☀️ Clear</button>
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('weather rain')">🌧 Rain</button>
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('weather thunder')">⚡ Thunder</button>
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('save-all')">💾 Save All</button>
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('whitelist on')">📋 WL On</button>
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('whitelist off')">📋 WL Off</button>
+        <button class="btn btn-sm btn-outline" onclick="sendQuickCommand('list')">📋 List Players</button>
+    </div>
+</div>
+
+<div id="status-message"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const SERVER_NAME = '{{ server.name }}';
+let ws = null;
+
+function toggleConsole() {
+    const section = document.getElementById('console-section');
+    section.style.display = section.style.display === 'none' ? 'block' : 'none';
+    if (section.style.display === 'block' && !ws) {
+        connectConsole();
+    }
+}
+
+function connectConsole() {
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    ws = new WebSocket(`${protocol}//${window.location.host}/ws/console/${SERVER_NAME}`);
+
+    ws.onmessage = function(event) {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'output') {
+            appendConsoleLine(msg.line);
+        }
+    };
+
+    ws.onclose = function() {
+        ws = null;
+        setTimeout(() => { if (document.getElementById('console-section').style.display !== 'none') connectConsole(); }, 3000);
+    };
+}
+
+function appendConsoleLine(line) {
+    const output = document.getElementById('console-output');
+    const div = document.createElement('div');
+    div.className = 'line';
+    div.textContent = line;
+    output.appendChild(div);
+    output.scrollTop = output.scrollHeight;
+}
+
+function sendCommand() {
+    const input = document.getElementById('console-input');
+    const cmd = input.value.trim();
+    if (!cmd) return;
+
+    appendConsoleLine(`> ${cmd}`);
+    input.value = '';
+
+    fetch(`/api/servers/${SERVER_NAME}/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: cmd })
+    });
+}
+
+function sendQuickCommand(cmd) {
+    fetch(`/api/servers/${SERVER_NAME}/command`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: cmd })
+    }).then(() => showToast(`Sent: ${cmd}`, 'info'));
+}
+
+async function startServer() {
+    const resp = await fetch(`/api/servers/${SERVER_NAME}/start`, { method: 'POST' });
+    const result = await resp.json();
+    showToast(result.success ? '✅ Server starting...' : '❌ ' + (result.error || 'Failed'), result.success ? 'success' : 'error');
+    setTimeout(() => location.reload(), 2000);
+}
+
+async function stopServer() {
+    const resp = await fetch(`/api/servers/${SERVER_NAME}/stop`, { method: 'POST' });
+    const result = await resp.json();
+    showToast(result.success ? '✅ Server stopping...' : '❌ ' + (result.error || 'Failed'), result.success ? 'success' : 'error');
+    setTimeout(() => location.reload(), 2000);
+}
+
+async function restartServer() {
+    const resp = await fetch(`/api/servers/${SERVER_NAME}/restart`, { method: 'POST' });
+    const result = await resp.json();
+    showToast(result.success ? '✅ Server restarting...' : '❌ ' + (result.error || 'Failed'), result.success ? 'success' : 'error');
+}
+
+async function createBackup() {
+    const resp = await fetch(`/api/servers/${SERVER_NAME}/backup`, { method: 'POST' });
+    const result = await resp.json();
+    showToast(result.success ? '✅ Backup created!' : '❌ ' + (result.error || 'Failed'), result.success ? 'success' : 'error');
+}
+
+async function deleteServer() {
+    if (!confirm('Are you sure you want to delete this server? This cannot be undone!')) return;
+    if (!confirm('Delete all server files too?')) return;
+    const resp = await fetch(`/api/servers/${SERVER_NAME}?delete_files=true`, { method: 'DELETE' });
+    const result = await resp.json();
+    if (result.success) { window.location.href = '/'; }
+    else { showToast('❌ ' + (result.error || 'Failed'), 'error'); }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Players — {{ server_name }} — BlockLaunch{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+    <h1>👥 Player Management — {{ server_name }}</h1>
+    <a href="/server/{{ server_name }}" class="btn btn-outline">← Back to Server</a>
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('ops')">⚡ Ops</div>
+    <div class="tab" onclick="switchTab('whitelist')">📋 Whitelist</div>
+    <div class="tab" onclick="switchTab('bans')">🔨 Bans</div>
+    <div class="tab" onclick="switchTab('live')">🎮 Live Commands</div>
+</div>
+
+<!-- Ops Tab -->
+<div class="tab-content active" id="tab-ops">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">⚡ Operators</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <input type="text" id="op-player" placeholder="Player name" style="flex: 1;">
+            <select id="op-level" style="width: 100px;">
+                <option value="1">Level 1</option>
+                <option value="2">Level 2</option>
+                <option value="3">Level 3</option>
+                <option value="4" selected>Level 4 (Full)</option>
+            </select>
+            <button class="btn btn-success" onclick="addOp()">OP</button>
+        </div>
+        <ul class="player-list" id="op-list">
+            {% for op in overview.ops %}
+            <li>
+                <span>{{ op.name }} <span style="color: var(--text-secondary);">Level {{ op.level }}</span></span>
+                <button class="btn btn-sm btn-error" onclick="removeOp('{{ op.name }}')">DEOP</button>
+            </li>
+            {% endfor %}
+            {% if not overview.ops %}
+            <li style="color: var(--text-secondary); text-align: center; padding: 2rem;">No operators configured</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<!-- Whitelist Tab -->
+<div class="tab-content" id="tab-whitelist">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📋 Whitelist</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+            <input type="text" id="wl-player" placeholder="Player name" style="flex: 1;">
+            <button class="btn btn-success" onclick="addWhitelist()">Add</button>
+        </div>
+        <ul class="player-list" id="whitelist-list">
+            {% for entry in overview.whitelist %}
+            <li>
+                <span>{{ entry.name }}</span>
+                <button class="btn btn-sm btn-error" onclick="removeWhitelist('{{ entry.name }}')">Remove</button>
+            </li>
+            {% endfor %}
+            {% if not overview.whitelist %}
+            <li style="color: var(--text-secondary); text-align: center; padding: 2rem;">No players whitelisted</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<!-- Bans Tab -->
+<div class="tab-content" id="tab-bans">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🔨 Bans</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+            <input type="text" id="ban-target" placeholder="Player name or IP" style="flex: 1;">
+            <input type="text" id="ban-reason" placeholder="Reason" style="flex: 1;">
+            <button class="btn btn-error" onclick="banPlayer()">Ban Player</button>
+            <button class="btn btn-error" onclick="banIP()">Ban IP</button>
+        </div>
+
+        <h3 style="margin: 1rem 0 0.5rem;">Banned Players</h3>
+        <ul class="player-list" id="ban-list">
+            {% for ban in overview.banned_players %}
+            <li>
+                <span>🔨 {{ ban.name }} — <em>{{ ban.reason }}</em></span>
+                <button class="btn btn-sm btn-success" onclick="pardonPlayer('{{ ban.name }}')">Pardon</button>
+            </li>
+            {% endfor %}
+            {% if not overview.banned_players %}
+            <li style="color: var(--text-secondary); text-align: center; padding: 1rem;">No banned players</li>
+            {% endif %}
+        </ul>
+
+        <h3 style="margin: 1rem 0 0.5rem;">Banned IPs</h3>
+        <ul class="player-list" id="ban-ip-list">
+            {% for ban in overview.banned_ips %}
+            <li>
+                <span>🌐 {{ ban.ip }} — <em>{{ ban.reason }}</em></span>
+                <button class="btn btn-sm btn-success" onclick="pardonIP('{{ ban.ip }}')">Pardon</button>
+            </li>
+            {% endfor %}
+            {% if not overview.banned_ips %}
+            <li style="color: var(--text-secondary); text-align: center; padding: 1rem;">No banned IPs</li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<!-- Live Commands Tab -->
+<div class="tab-content" id="tab-live">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🎮 Live Commands</span>
+            <span style="color: var(--text-secondary); font-size: 0.85rem;">Server must be running</span>
+        </div>
+
+        <div class="form-group">
+            <label>Player</label>
+            <input type="text" id="live-player" placeholder="Player name">
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+            <button class="btn btn-warning" onclick="kickPlayer()">🚪 Kick</button>
+            <button class="btn btn-primary" onclick="setGamemode('survival')">Survival</button>
+            <button class="btn btn-primary" onclick="setGamemode('creative')">Creative</button>
+            <button class="btn btn-primary" onclick="setGamemode('adventure')">Adventure</button>
+            <button class="btn btn-primary" onclick="setGamemode('spectator')">Spectator</button>
+        </div>
+
+        <div class="form-group">
+            <label>Teleport Target</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="tp-target" placeholder="Target player" style="flex: 1;">
+                <button class="btn btn-primary" onclick="teleport()">Teleport</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Give Item</label>
+            <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="give-item" placeholder="minecraft:diamond" style="flex: 1;">
+                <button class="btn btn-success" onclick="giveItem()">Give x64</button>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+            <button class="btn btn-outline" onclick="setTime('day')">☀️ Day</button>
+            <button class="btn btn-outline" onclick="setTime('night')">🌙 Night</button>
+            <button class="btn btn-outline" onclick="setWeather('clear')">☀️ Clear</button>
+            <button class="btn btn-outline" onclick="setWeather('rain')">🌧 Rain</button>
+            <button class="btn btn-outline" onclick="setWeather('thunder')">⚡ Thunder</button>
+            <button class="btn btn-success" onclick="saveAll()">💾 Save All</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const SERVER = '{{ server_name }}';
+
+function switchTab(tab) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.tab:nth-child(${['ops','whitelist','bans','live'].indexOf(tab) + 1})`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+// Ops
+async function addOp() {
+    const player = document.getElementById('op-player').value;
+    const level = document.getElementById('op-level').value;
+    const resp = await fetch(`/api/players/${SERVER}/ops`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({player, level: parseInt(level)})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ ${player} is now OP` : '❌ Failed', result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 500);
+}
+
+async function removeOp(player) {
+    const resp = await fetch(`/api/players/${SERVER}/ops/${player}`, {method: 'DELETE'});
+    const result = await resp.json();
+    showToast(result.success ? `✅ ${player} deopped` : '❌ Failed', result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 500);
+}
+
+// Whitelist
+async function addWhitelist() {
+    const player = document.getElementById('wl-player').value;
+    const resp = await fetch(`/api/players/${SERVER}/whitelist`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({player})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ ${player} added to whitelist` : '❌ Failed', result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 500);
+}
+
+async function removeWhitelist(player) {
+    const resp = await fetch(`/api/players/${SERVER}/whitelist/${player}`, {method: 'DELETE'});
+    const result = await resp.json();
+    showToast(result.success ? `✅ ${player} removed from whitelist` : '❌ Failed', result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 500);
+}
+
+// Bans
+async function banPlayer() {
+    const target = document.getElementById('ban-target').value;
+    const reason = document.getElementById('ban-reason').value || 'Banned by operator';
+    const resp = await fetch(`/api/players/${SERVER}/bans/player`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({target, reason})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ ${target} banned` : '❌ Failed', result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 500);
+}
+
+async function banIP() {
+    const target = document.getElementById('ban-target').value;
+    const reason = document.getElementById('ban-reason').value || 'Banned by operator';
+    const resp = await fetch(`/api/players/${SERVER}/bans/ip`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({target, reason})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ IP ${target} banned` : '❌ Failed', result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 500);
+}
+
+async function pardonPlayer(player) {
+    const resp = await fetch(`/api/players/${SERVER}/bans/player/${player}`, {method: 'DELETE'});
+    const result = await resp.json();
+    showToast(result.success ? `✅ ${player} pardoned` : '❌ Failed', result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 500);
+}
+
+async function pardonIP(ip) {
+    const resp = await fetch(`/api/players/${SERVER}/bans/ip/${ip}`, {method: 'DELETE'});
+    const result = await resp.json();
+    showToast(result.success ? `✅ IP ${ip} pardoned` : '❌ Failed', result.success ? 'success' : 'error');
+    if (result.success) setTimeout(() => location.reload(), 500);
+}
+
+// Live commands
+async function kickPlayer() {
+    const player = document.getElementById('live-player').value;
+    const resp = await fetch(`/api/players/${SERVER}/kick`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({player, reason: 'Kicked by operator'})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ Kicked ${player}` : '❌ Failed', result.success ? 'success' : 'error');
+}
+
+async function setGamemode(gm) {
+    const player = document.getElementById('live-player').value;
+    const resp = await fetch(`/api/players/${SERVER}/gamemode`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({player, gamemode: gm})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ Set ${player} to ${gm}` : '❌ Failed', result.success ? 'success' : 'error');
+}
+
+async function teleport() {
+    const player = document.getElementById('live-player').value;
+    const target = document.getElementById('tp-target').value;
+    const resp = await fetch(`/api/players/${SERVER}/teleport`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({player, target})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ Teleported ${player} to ${target}` : '❌ Failed', result.success ? 'success' : 'error');
+}
+
+async function giveItem() {
+    const player = document.getElementById('live-player').value;
+    const item = document.getElementById('give-item').value;
+    const resp = await fetch(`/api/players/${SERVER}/give`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({player, item, amount: 64})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ Gave ${item} x64 to ${player}` : '❌ Failed', result.success ? 'success' : 'error');
+}
+
+async function setTime(t) {
+    const resp = await fetch(`/api/players/${SERVER}/time`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({command: t})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ Time set to ${t}` : '❌ Failed', result.success ? 'success' : 'error');
+}
+
+async function setWeather(w) {
+    const resp = await fetch(`/api/players/${SERVER}/weather`, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({command: w})
+    });
+    const result = await resp.json();
+    showToast(result.success ? `✅ Weather set to ${w}` : '❌ Failed', result.success ? 'success' : 'error');
+}
+
+async function saveAll() {
+    const resp = await fetch(`/api/players/${SERVER}/save-all`, {method: 'POST'});
+    const result = await resp.json();
+    showToast(result.success ? '✅ World saved' : '❌ Failed', result.success ? 'success' : 'error');
+}
+</script>
+{% endblock %}

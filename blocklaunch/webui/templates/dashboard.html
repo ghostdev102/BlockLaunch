@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}BlockLaunch Dashboard{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>🚀 Your Servers</h1>
+    <a href="/create" class="btn btn-success btn-lg">➕ Create Server</a>
+</div>
+
+{% if servers %}
+<div class="server-grid">
+    {% for server in servers %}
+    <div class="server-card {{ server.status }}" onclick="window.location='/server/{{ server.name }}'">
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div class="server-name">
+                <span class="status-dot {{ server.status }}"></span>
+                {{ server.name }}
+            </div>
+            <span class="badge badge-{{ server.mode }}">{{ server.mode }}</span>
+        </div>
+        <div class="server-meta">
+            <span>📦 {{ server.type }}</span>
+            <span>🎯 {{ server.version }}</span>
+            <span>🔌 :{{ server.port }}</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+            <span class="badge badge-{{ server.status }}">{{ server.status }}</span>
+            {% if server.memory %}
+            <span style="color: var(--text-secondary); font-size: 0.8rem;">💾 {{ server.memory }}</span>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="icon">🎮</div>
+    <h2>No servers yet</h2>
+    <p>Create your first Minecraft server to get started!</p>
+    <br>
+    <a href="/create" class="btn btn-success btn-lg">➕ Create Server</a>
+</div>
+{% endif %}
+{% endblock %}

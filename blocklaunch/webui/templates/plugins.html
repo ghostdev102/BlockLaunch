@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Plugins — BlockLaunch{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 1.5rem;">🔌 Plugin Browser</h1>
+
+<!-- Search -->
+<div class="card">
+    <div style="display: flex; gap: 0.5rem; align-items: end;">
+        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label>Search</label>
+            <input type="text" id="plugin-search" placeholder="Search plugins... (e.g., Essentials, WorldEdit, Vault)"
+                   onkeydown="if(event.key==='Enter')searchPlugins()">
+        </div>
+        <div class="form-group" style="width: 200px; margin-bottom: 0;">
+            <label>Source</label>
+            <select id="plugin-source">
+                <option value="all">All Sources</option>
+                <option value="modrinth">Modrinth</option>
+                <option value="hangar">Hangar (PaperMC)</option>
+                <option value="spigotmc">SpigotMC</option>
+            </select>
+        </div>
+        <button class="btn btn-success" onclick="searchPlugins()">🔍 Search</button>
+    </div>
+</div>
+
+<!-- Results -->
+<div id="plugin-results"></div>
+
+<div id="status-message"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+async function searchPlugins() {
+    const query = document.getElementById('plugin-search').value.trim();
+    const source = document.getElementById('plugin-source').value;
+    const resultsDiv = document.getElementById('plugin-results');
+
+    if (!query) {
+        showToast('Please enter a search query', 'warning');
+        return;
+    }
+
+    resultsDiv.innerHTML = '<div class="card" style="text-align: center; padding: 2rem;">⏳ Searching...</div>';
+
+    try {
+        const resp = await fetch('/api/plugins/search', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                query: query,
+                sources: source === 'all' ? null : [source],
+                limit: 20
+            })
+        });
+
+        const result = await resp.json();
+
+        if (result.success && result.results.length > 0) {
+            resultsDiv.innerHTML = `
+                <div style="margin-bottom: 1rem; color: var(--text-secondary);">
+                    Found ${result.results.length} plugins
+                </div>
+                <div class="plugin-grid">
+                    ${result.results.map(p => `
+                        <div class="plugin-card">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div>
+                                    <strong>${p.name}</strong>
+                                    <span class="badge badge-${p.source === 'modrinth' ? 'premium' : p.source === 'hangar' ? 'cracked' : 'eaglercraft'}"
+                                          style="margin-left: 0.5rem;">${p.source}</span>
+                                </div>
+                            </div>
+                            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0.5rem 0;">
+                                ${p.description || 'No description available'}
+                            </p>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--text-secondary); font-size: 0.8rem;">
+                                    ⬇️ ${p.downloads.toLocaleString()} downloads
+                                </span>
+                                <button class="btn btn-sm btn-success" onclick="installPlugin('${p.id}', '${p.source}')">
+                                    📥 Install
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        } else {
+            resultsDiv.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">🔍</div>
+                    <h2>No plugins found</h2>
+                    <p>Try a different search term or source</p>
+                </div>
+            `;
+        }
+    } catch (e) {
+        resultsDiv.innerHTML = `<div class="card" style="text-align: center; color: var(--error);">❌ Search failed: ${e.message}</div>`;
+    }
+}
+
+async function installPlugin(pluginId, source) {
+    // Ask which server to install to
+    const servers = await fetch('/api/servers').then(r => r.json());
+    if (!servers.length) {
+        showToast('No servers available. Create one first!', 'error');
+        return;
+    }
+
+    const serverName = prompt(`Install to which server?\n\nAvailable: ${servers.map(s => s.name).join(', ')}`);
+    if (!serverName) return;
+
+    const server = servers.find(s => s.name === serverName);
+    if (!server) {
+        showToast('Server not found!', 'error');
+        return;
+    }
+
+    showToast('⏳ Installing plugin...', 'info');
+
+    try {
+        const resp = await fetch('/api/plugins/install', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                server_name: serverName,
+                plugin_id: pluginId,
+                source: source
+            })
+        });
+        const result = await resp.json();
+        showToast(result.success ? '✅ Plugin installed!' : '❌ ' + (result.error || 'Failed'), result.success ? 'success' : 'error');
+    } catch (e) {
+        showToast('❌ Install failed: ' + e.message, 'error');
+    }
+}
+</script>
+{% endblock %}

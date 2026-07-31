@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blocklaunch"
+version = "1.0.0"
+description = "Run Minecraft servers easily, free with a simple TUI and/or WebUI"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Fuego Technology", email = "dev@fuegotechnology.com"},
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Environment :: Web Environment",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Games/Entertainment",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "textual>=0.47.0",
+    "rich>=13.0.0",
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "aiofiles>=23.0.0",
+    "websockets>=12.0",
+    "jinja2>=3.1.0",
+    "click>=8.1.0",
+    "psutil>=5.9.0",
+    "packaging>=23.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+blocklaunch = "blocklaunch.__main__:cli"
+
+[project.urls]
+Homepage = "https://github.com/fuegotechnology/BlockLaunch"
+Repository = "https://github.com/fuegotechnology/BlockLaunch"
+Issues = "https://github.com/fuegotechnology/BlockLaunch/issues"
+
+[tool.setuptools.packages.find]
+include = ["blocklaunch*"]
+
+[tool.setuptools.package-data]
+blocklaunch = [
+    "webui/templates/*.html",
+    "webui/static/css/*.css",
+    "webui/static/js/*.js",
+    "tui/*.tcss",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

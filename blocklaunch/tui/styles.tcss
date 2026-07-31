@@ -1,0 +1,166 @@
+/* BlockLaunch TUI Styles */
+
+Screen {
+    background: $surface;
+}
+
+/* Header */
+Header {
+    background: $primary;
+    color: $text;
+}
+
+/* Dashboard */
+#dashboard {
+    layout: vertical;
+    height: auto;
+}
+
+#server-list {
+    height: 1fr;
+    border: solid $primary;
+    padding: 0 1;
+    margin: 0 1;
+}
+
+.server-item {
+    height: 3;
+    padding: 0 1;
+    margin: 0 1;
+    border: round $primary-darken-2;
+}
+
+.server-item:hover {
+    background: $primary-darken-3;
+}
+
+.server-item.running {
+    border: round $success;
+}
+
+.server-item.stopped {
+    border: round $error;
+}
+
+/* Status indicator */
+.status-dot {
+    width: 2;
+    height: 1;
+    text-style: bold;
+}
+
+/* Create server form */
+#create-form {
+    padding: 1 2;
+    height: auto;
+}
+
+#create-form Input,
+#create-form Select {
+    margin: 0 0 1 0;
+}
+
+/* Server detail */
+#server-detail {
+    padding: 1 2;
+}
+
+#server-info {
+    height: auto;
+    border: solid $primary;
+    padding: 1;
+    margin: 0 0 1 0;
+}
+
+#server-actions {
+    height: auto;
+    padding: 0 1;
+}
+
+/* Console */
+#console-output {
+    height: 1fr;
+    border: solid $primary;
+    background: $surface-darken-1;
+    color: $text;
+    padding: 0 1;
+    overflow-y: auto;
+}
+
+#console-input {
+    dock: bottom;
+    height: 3;
+    margin: 1 0;
+}
+
+/* Plugin browser */
+#plugin-search {
+    height: 3;
+    margin: 0 0 1 0;
+}
+
+#plugin-results {
+    height: 1fr;
+    border: solid $primary;
+    padding: 0 1;
+}
+
+.plugin-item {
+    height: 5;
+    padding: 0 1;
+    border: round $primary-darken-2;
+}
+
+/* Player manager */
+#player-manager {
+    padding: 1 2;
+}
+
+#player-tabs {
+    height: auto;
+    margin: 0 0 1 0;
+}
+
+.player-list {
+    height: 1fr;
+    border: solid $primary;
+    padding: 0 1;
+}
+
+/* Common */
+.action-button {
+    margin: 0 1;
+}
+
+.info-label {
+    color: $text-muted;
+    text-style: italic;
+}
+
+.success {
+    color: $success;
+}
+
+.error {
+    color: $error;
+}
+
+.warning {
+    color: $warning;
+}
+
+/* Mode badges */
+.mode-premium {
+    color: $success;
+    text-style: bold;
+}
+
+.mode-cracked {
+    color: $warning;
+    text-style: bold;
+}
+
+.mode-eaglercraft {
+    color: $accent;
+    text-style: bold;
+}
