@@ -51,6 +51,18 @@
             <input type="number" id="port" value="25565" min="1" max="65535">
         </div>
 
+        <div class="form-group" style="display: flex; gap: 1rem; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="skip_java_check" style="width: auto;">
+                Skip Java Check
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="skip_download" style="width: auto;">
+                Skip JAR Download
+            </label>
+            <span style="color: var(--text-secondary); font-size: 0.8rem;">(Enable both if Java isn't installed yet)</span>
+        </div>
+
         <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
             <button class="btn btn-success btn-lg" onclick="createServer()">✅ Create Server</button>
             <a href="/" class="btn btn-outline btn-lg">Cancel</a>

@@ -25,6 +25,8 @@ class CreateServerRequest(BaseModel):
     memory: str = Field(default="2G")
     port: int = Field(default=25565, ge=1, le=65535)
     accept_eula: bool = Field(default=True)
+    skip_java_check: bool = Field(default=False, description="Skip Java validation (for testing or when Java will be installed later)")
+    skip_download: bool = Field(default=False, description="Skip JAR download (creates config & directory only)")
 
 
 class CommandRequest(BaseModel):
@@ -64,6 +66,8 @@ async def create_server(body: CreateServerRequest, request: Request) -> dict[str
         memory=body.memory,
         port=body.port,
         accept_eula=body.accept_eula,
+        skip_java_check=body.skip_java_check,
+        skip_download=body.skip_download,
     )
     if result.success:
         return {"success": True, "data": result.data}

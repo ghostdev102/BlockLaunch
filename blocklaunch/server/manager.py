@@ -112,8 +112,17 @@ class ServerManager:
         port: int = 25565,
         accept_eula: bool = False,
         directory: Optional[str] = None,
+        skip_java_check: bool = False,
+        skip_download: bool = False,
     ) -> OperationResult:
-        """Create a new Minecraft server."""
+        """Create a new Minecraft server.
+
+        Args:
+            skip_java_check: If True, skip Java validation (useful for testing or
+                when Java will be installed later).
+            skip_download: If True, skip JAR download (creates the server config
+                and directory structure only).
+        """
         if name in self._configs:
             return OperationResult(success=False, error=f"Server '{name}' already exists")
 
@@ -135,14 +144,28 @@ class ServerManager:
         server_dir.mkdir(parents=True, exist_ok=True)
 
         # Check Java
-        java_info = await self.java_detector.detect()
-        if not java_info.is_valid:
-            return OperationResult(success=False, error=java_info.error)
+        if not skip_java_check:
+            java_info = await self.java_detector.detect()
+            if not java_info.is_valid:
+                return OperationResult(success=False, error=java_info.error)
 
         # Download server JAR
-        download_result = await self.downloader.download(server_type, mc_version, server_dir)
-        if not download_result.success:
-            return OperationResult(success=False, error=f"Download failed: {download_result.error}")
+        download_warnings = []
+        if not skip_download:
+            download_result = await self.downloader.download(server_type, mc_version, server_dir)
+            if not download_result.success:
+                download_warnings.append(f"JAR download failed: {download_result.error}")
+                # Don't fail entirely — create the config anyway so the user can
+                # download the JAR manually later
+                logger.warning(download_warnings[-1])
+        else:
+            # Create a placeholder so the user knows to download the JAR
+            placeholder = server_dir / "PLACE_SERVER_JAR_HERE.txt"
+            placeholder.write_text(
+                f"Place your {server_type} {mc_version} server.jar in this directory.\n"
+                f"BlockLaunch will detect it automatically.\n",
+                encoding="utf-8",
+            )
 
         # Accept EULA
         if accept_eula:

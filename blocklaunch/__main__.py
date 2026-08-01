@@ -63,8 +63,11 @@ def tui() -> None:
 @click.option("--port", "-p", default=25565, type=int, help="Server port.")
 @click.option("--eula", is_flag=True, help="Accept Minecraft EULA automatically.")
 @click.option("--directory", "-d", default=None, help="Server directory.")
+@click.option("--skip-java-check", is_flag=True, help="Skip Java validation (for testing).")
+@click.option("--skip-download", is_flag=True, help="Skip JAR download (creates config only).")
 def create(name: str, mode: str, version: str, server_type: str, memory: str,
-           port: int, eula: bool, directory: Optional[str]) -> None:
+           port: int, eula: bool, directory: Optional[str],
+           skip_java_check: bool, skip_download: bool) -> None:
     """Create a new Minecraft server."""
     from blocklaunch.server.manager import ServerManager
     from blocklaunch.config import settings
@@ -79,6 +82,8 @@ def create(name: str, mode: str, version: str, server_type: str, memory: str,
         port=port,
         accept_eula=eula,
         directory=directory,
+        skip_java_check=skip_java_check,
+        skip_download=skip_download,
     ))
     if result.success:
         click.echo(f"✅ Server '{name}' created successfully at {result.path}")
