@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block title %}Create Server — BlockLaunch{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 2rem;">🚀 Create New Server</h1>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Server Configuration</span>
+        </div>
+
+        <div class="form-group">
+            <label for="name">Server Name</label>
+            <input type="text" id="name" placeholder="my-server" pattern="[a-zA-Z0-9_-]+" required>
+        </div>
+
+        <div class="form-group">
+            <label for="mode">Server Mode</label>
+            <select id="mode" onchange="updateModeExplanation()">
+                <option value="premium">🎮 Minecraft Premium</option>
+                <option value="cracked">🔓 Minecraft Cracked</option>
+                <option value="eaglercraft">🦅 Eaglercraft (WSS Proxy)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="server_type">Server Software</label>
+            <select id="server_type">
+                <option value="paper">Paper (Recommended)</option>
+                <option value="vanilla">Vanilla</option>
+                <option value="spigot">Spigot</option>
+                <option value="forge">Forge</option>
+                <option value="fabric">Fabric</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="mc_version">Minecraft Version</label>
+            <input type="text" id="mc_version" value="1.20.4" placeholder="1.20.4">
+        </div>
+
+        <div class="form-group">
+            <label for="memory">Max Memory</label>
+            <input type="text" id="memory" value="2G" placeholder="2G, 4G, 8G...">
+        </div>
+
+        <div class="form-group">
+            <label for="port">Server Port</label>
+            <input type="number" id="port" value="25565" min="1" max="65535">
+        </div>
+
+        <div class="form-group" style="display: flex; gap: 1rem; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="skip_java_check" style="width: auto;">
+                Skip Java Check
+            </label>
+            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                <input type="checkbox" id="skip_download" style="width: auto;">
+                Skip JAR Download
+            </label>
+            <span style="color: var(--text-secondary); font-size: 0.8rem;">(Enable both if Java isn't installed yet)</span>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <button class="btn btn-success btn-lg" onclick="createServer()">✅ Create Server</button>
+            <a href="/" class="btn btn-outline btn-lg">Cancel</a>
+        </div>
+    </div>
+
+    <div>
+        <div class="card" id="mode-explanation">
+            <div class="card-header">
+                <span class="card-title">🎮 Minecraft Premium</span>
+            </div>
+            <p>Standard online-mode server. Players must authenticate with Mojang/Microsoft accounts.</p>
+            <br>
+            <ul style="list-style: none; padding: 0;">
+                <li>✅ Full authentication security</li>
+                <li>✅ No name spoofing possible</li>
+                <li>✅ Official Mojang support</li>
+                <li>⚠️ Players need a premium account</li>
+            </ul>
+        </div>
+
+        <div class="card" style="margin-top: 1rem;">
+            <div class="card-header">
+                <span class="card-title">💡 Quick Tips</span>
+            </div>
+            <ul style="list-style: none; padding: 0; line-height: 2;">
+                <li>📋 <strong>Paper</strong> is recommended for best performance</li>
+                <li>💾 <strong>2GB RAM</strong> is minimum for 10 players</li>
+                <li>🔓 <strong>Cracked mode</strong> requires AuthMe or similar plugin</li>
+                <li>🦅 <strong>Eaglercraft</strong> lets players join from a browser!</li>
+                <li>🔌 <strong>Port 25565</strong> is the default Minecraft port</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div id="status-message" style="margin-top: 1rem;"></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function updateModeExplanation() {
+    const mode = document.getElementById('mode').value;
+    const card = document.getElementById('mode-explanation');
+    const explanations = {
+        premium: {
+            title: '🎮 Minecraft Premium',
+            desc: 'Standard online-mode server. Players must authenticate with Mojang/Microsoft accounts.',
+            points: [
+                '✅ Full authentication security',
+                '✅ No name spoofing possible',
+                '✅ Official Mojang support',
+                '⚠️ Players need a premium account'
+            ]
+        },
+        cracked: {
+            title: '🔓 Minecraft Cracked',
+            desc: 'Offline-mode server. Players can join without a premium Minecraft account.',
+            points: [
+                '✅ No premium account needed',
+                '✅ Free for everyone',
+                '⚠️ VULNERABLE to name spoofing — install AuthMe!',
+                '⚠️ Not officially supported by Mojang'
+            ]
+        },
+        eaglercraft: {
+            title: '🦅 Eaglercraft (WSS Proxy)',
+            desc: 'Browser-based Minecraft with WebSocket proxy. Players can join from a web browser!',
+            points: [
+                '✅ Play from any web browser',
+                '✅ No download needed for players',
+                '✅ Includes EaglercraftXBungee WSS proxy',
+                '⚠️ Limited to browser capabilities',
+                '⚠️ Offline mode (install AuthMe!)'
+            ]
+        }
+    };
+
+    const info = explanations[mode];
+    card.innerHTML = `
+        <div class="card-header">
+            <span class="card-title">${info.title}</span>
+        </div>
+        <p>${info.desc}</p>
+        <br>
+        <ul style="list-style: none; padding: 0;">
+            ${info.points.map(p => `<li>${p}</li>`).join('')}
+        </ul>
+    `;
+}
+
+async function createServer() {
+    const data = {
+        name: document.getElementById('name').value,
+        mode: document.getElementById('mode').value,
+        server_type: document.getElementById('server_type').value,
+        mc_version: document.getElementById('mc_version').value,
+        memory: document.getElementById('memory').value,
+        port: parseInt(document.getElementById('port').value),
+        accept_eula: true
+    };
+
+    const statusEl = document.getElementById('status-message');
+
+    try {
+        const resp = await fetch('/api/servers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+
+        if (result.success) {
+            showToast('✅ Server created successfully!', 'success');
+            setTimeout(() => window.location.href = `/server/${data.name}`, 1000);
+        } else {
+            showToast('❌ ' + (result.error || 'Failed to create server'), 'error');
+        }
+    } catch (e) {
+        showToast('❌ Network error: ' + e.message, 'error');
+    }
+}
+</script>
+{% endblock %}

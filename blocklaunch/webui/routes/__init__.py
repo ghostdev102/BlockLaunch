@@ -1,0 +1,1 @@
+"""WebUI routes package."""
