@@ -43,10 +43,13 @@
 
 ## Installation
 
-### From PyPI (when published)
+### From PyPI
 ```bash
 pip install blocklaunch
 ```
+
+The package is published on [PyPI](https://pypi.org/project/blocklaunch/) and supports
+Python 3.10+. We recommend installing in a virtual environment.
 
 ### From Source
 ```bash
@@ -277,6 +280,27 @@ MIT License — see [LICENSE](LICENSE) for details.
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+---
+
+## Releasing to PyPI
+
+Releases are published automatically by GitHub Actions whenever a `v*` tag is pushed
+(using [trusted publishing](https://docs.pypi.org/trusted-publishers/) — no API token needed).
+
+1. Bump the version in `blocklaunch/__init__.py` and `pyproject.toml`
+2. Commit and tag: `git tag v1.0.0`
+3. Push the tag: `git push origin v1.0.0`
+4. The workflow builds the package, runs `twine check`, and uploads to PyPI
+
+### Manual upload (alternative)
+```bash
+pip install build twine
+python -m build
+twine check dist/*
+twine upload dist/*
+```
+> **Note:** `twine upload` requires a PyPI API token. Prefer the automated workflow.
 
 ---
 

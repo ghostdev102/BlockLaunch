@@ -6,9 +6,14 @@ import asyncio
 from typing import Optional
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, TabbedContent, Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label, ListItem, ListView, Static, TabPane
+
+try:  # Textual >= 0.42 moved TabbedContent to textual.widgets
+    from textual.widgets import TabbedContent
+except ImportError:  # pragma: no cover - older Textual
+    from textual.containers import TabbedContent
 
 from blocklaunch.server.manager import ServerManager
 from blocklaunch.server.players import PlayerManager

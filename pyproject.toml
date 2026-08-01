@@ -7,7 +7,8 @@ name = "blocklaunch"
 version = "1.0.0"
 description = "Run Minecraft servers easily, free with a simple TUI and/or WebUI"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [
     {name = "Fuego Technology", email = "dev@fuegotechnology.com"},
@@ -17,7 +18,6 @@ classifiers = [
     "Environment :: Console",
     "Environment :: Web Environment",
     "Intended Audience :: System Administrators",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
@@ -63,6 +63,7 @@ include = ["blocklaunch*"]
 
 [tool.setuptools.package-data]
 blocklaunch = [
+    "py.typed",
     "webui/templates/*.html",
     "webui/static/css/*.css",
     "webui/static/js/*.js",
