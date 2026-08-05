@@ -6,9 +6,9 @@ import asyncio
 from typing import Optional
 
 from textual.app import ComposeResult
-from textual.containers import Horizontal, TabbedContent, Vertical, VerticalScroll
+from textual.containers import Horizontal, Vertical, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Input, Label, ListItem, ListView, Static, TabPane
+from textual.widgets import Button, Footer, Input, Label, ListItem, ListView, Static, TabPane, TabbedContent
 
 from blocklaunch.server.manager import ServerManager
 from blocklaunch.server.players import PlayerManager
@@ -92,6 +92,7 @@ class PlayerManagerScreen(Screen):
                         Button("💾 Save All", id="save-btn", variant="success"),
                     )
                     yield Static("", id="live-status")
+            yield Footer()
 
     def on_mount(self) -> None:
         self._load_data()

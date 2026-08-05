@@ -17,6 +17,11 @@
         </div>
 
         <div class="form-group">
+            <label for="description">Description (optional)</label>
+            <input type="text" id="description" placeholder="A friendly survival server" maxlength="200">
+        </div>
+
+        <div class="form-group">
             <label for="mode">Server Mode</label>
             <select id="mode" onchange="updateModeExplanation()">
                 <option value="premium">🎮 Minecraft Premium</option>
@@ -157,6 +162,7 @@ function updateModeExplanation() {
 async function createServer() {
     const data = {
         name: document.getElementById('name').value,
+        description: document.getElementById('description').value,
         mode: document.getElementById('mode').value,
         server_type: document.getElementById('server_type').value,
         mc_version: document.getElementById('mc_version').value,

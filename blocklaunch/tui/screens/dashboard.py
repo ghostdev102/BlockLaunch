@@ -43,6 +43,8 @@ class ServerListItem(ListItem):
         else:
             mode_class = "mode-premium"
 
+        description = self.server_data.get("description", "")
+
         yield Horizontal(
             Label(f"{status_emoji}", classes="status-dot"),
             Label(f" {name}", classes="server-name"),
@@ -51,6 +53,8 @@ class ServerListItem(ListItem):
             Label(f" :{port}", classes="server-port"),
             classes="server-item",
         )
+        if description:
+            yield Label(f"     {description}", classes="server-desc")
 
 
 class DashboardScreen(Screen):
@@ -77,13 +81,12 @@ class DashboardScreen(Screen):
             )
 
     def on_mount(self) -> None:
-        self._load_servers()
+        self._refresh()
 
-    @staticmethod
-    def _load_servers() -> list[dict]:
-        """Load servers from the server manager."""
-        manager = ServerManager(settings)
-        return manager.list_servers()
+    def on_screen_resume(self) -> None:
+        """Refresh whenever the dashboard becomes visible again."""
+        if self.is_mounted:
+            self._refresh()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id == "refresh-btn":

@@ -34,6 +34,13 @@ Header {
     background: $primary-darken-3;
 }
 
+.server-desc {
+    padding: 0 2;
+    margin: 0 1 1 1;
+    color: $text-muted;
+    text-style: italic;
+}
+
 .server-item.running {
     border: round $success;
 }
@@ -99,10 +106,35 @@ Header {
     margin: 0 0 1 0;
 }
 
+#plugin-search Select {
+    min-width: 24;
+}
+
+.form-label {
+    padding: 0 0 0 1;
+    margin: 0;
+}
+
+.section-label {
+    color: $text-muted;
+    text-style: bold;
+    margin: 1 0 0 1;
+}
+
+#installed-list {
+    height: 6;
+    border: solid $primary;
+    padding: 0 1;
+}
+
 #plugin-results {
     height: 1fr;
     border: solid $primary;
     padding: 0 1;
+}
+
+.muted {
+    color: $text-muted;
 }
 
 .plugin-item {

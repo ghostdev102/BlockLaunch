@@ -7,7 +7,7 @@ import asyncio
 from textual.app import ComposeResult
 from textual.containers import Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Input, Label, Select, Static
+from textual.widgets import Button, Footer, Input, Label, Select, Static
 
 from blocklaunch.server.manager import ServerManager
 from blocklaunch.config import settings
@@ -39,6 +39,9 @@ class CreateServerScreen(Screen):
 
             yield Label("Server Name:")
             yield Input(placeholder="my-server", id="server-name")
+
+            yield Label("Description (optional):")
+            yield Input(placeholder="A friendly survival server", id="server-description")
 
             yield Label("Server Mode:")
             yield Select(
@@ -74,6 +77,7 @@ class CreateServerScreen(Screen):
             )
 
             yield Static("", id="status")
+            yield Footer()
 
     def on_mount(self) -> None:
         self._update_mode_explanation("premium")
@@ -110,6 +114,7 @@ class CreateServerScreen(Screen):
 
         if event.button.id == "create-btn":
             name = self.query_one("#server-name", Input).value.strip()
+            description = self.query_one("#server-description", Input).value.strip()
             mode = str(self.query_one("#server-mode", Select).value)
             server_type = str(self.query_one("#server-type", Select).value)
             mc_version = self.query_one("#mc-version", Input).value.strip()
@@ -136,6 +141,7 @@ class CreateServerScreen(Screen):
                 mode=mode,
                 mc_version=mc_version,
                 server_type=server_type,
+                description=description,
                 memory=memory,
                 port=port,
                 accept_eula=True,

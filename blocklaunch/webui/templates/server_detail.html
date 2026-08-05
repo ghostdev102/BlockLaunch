@@ -13,6 +13,9 @@
 
 <!-- Server Info -->
 <div class="card">
+    {% if server.description %}
+    <p style="color: var(--text-secondary); margin-bottom: 1rem;">{{ server.description }}</p>
+    {% endif %}
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
         <div>
             <div style="color: var(--text-secondary); font-size: 0.8rem;">MODE</div>
@@ -49,7 +52,7 @@
         <button class="btn btn-warning" onclick="restartServer()">🔄 Restart</button>
         <button class="btn btn-primary" onclick="toggleConsole()">💻 Console</button>
         <a href="/players/{{ server.name }}" class="btn btn-primary">👥 Players</a>
-        <a href="/plugins" class="btn btn-primary">🔌 Plugins</a>
+        <a href="/plugins/{{ server.name }}" class="btn btn-primary">🔌 Plugins</a>
         <button class="btn btn-outline" onclick="createBackup()">💾 Backup</button>
         <button class="btn btn-error" onclick="deleteServer()">🗑 Delete</button>
     </div>

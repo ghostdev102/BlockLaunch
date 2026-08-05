@@ -36,6 +36,7 @@ class ServerConfig:
     mode: str  # premium, cracked, eaglercraft
     server_type: str  # vanilla, paper, spigot, forge, fabric
     mc_version: str
+    description: str = ""
     memory: str = "2G"
     port: int = 25565
     directory: Optional[str] = None
@@ -56,6 +57,7 @@ class ServerConfig:
             "mode": self.mode,
             "server_type": self.server_type,
             "mc_version": self.mc_version,
+            "description": self.description,
             "memory": self.memory,
             "port": self.port,
             "directory": self.directory,
@@ -108,6 +110,7 @@ class ServerManager:
         mode: str,
         mc_version: str,
         server_type: str = "paper",
+        description: str = "",
         memory: str = "2G",
         port: int = 25565,
         accept_eula: bool = False,
@@ -200,6 +203,7 @@ class ServerManager:
             mode=mode,
             server_type=server_type,
             mc_version=mc_version,
+            description=description,
             memory=memory,
             port=port,
             directory=str(server_dir),
@@ -258,32 +262,17 @@ class ServerManager:
 
         # Build command
         java_path = java_info.path
-        jar_path = server_dir / "server.jar"
 
-        # For Forge installer, we need to run the installer first
-        forge_installer = server_dir / "forge-installer.jar"
-        if forge_installer.exists():
-            logger.info("Running Forge installer...")
-            install_proc = await asyncio.create_subprocess_exec(
-                java_path,
-                "-jar",
-                str(forge_installer),
-                "--installServer",
-                cwd=str(server_dir),
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT,
+        # Resolve the server JAR, auto-downloading it if missing
+        jar_path = await self._ensure_server_jar(config, server_dir, java_path)
+        if not jar_path:
+            return OperationResult(
+                success=False,
+                error=(
+                    f"Could not obtain a server JAR for {config.server_type} {config.mc_version}. "
+                    f"Place a server.jar in {server_dir} or check network access."
+                ),
             )
-            await install_proc.wait()
-            # Find the actual forge jar after installation
-            for jar in server_dir.glob("forge-*-server.jar"):
-                jar_path = jar
-                break
-            for jar in server_dir.glob("run.jar"):
-                jar_path = jar
-                break
-
-        if not jar_path.exists():
-            return OperationResult(success=False, error=f"Server JAR not found at {jar_path}")
 
         # JVM arguments
         jvm_args = [
@@ -351,6 +340,57 @@ class ServerManager:
             success=True,
             data={"pid": process.pid, "name": name, "directory": str(server_dir)},
         )
+
+    async def _ensure_server_jar(
+        self,
+        config: "ServerConfig",
+        server_dir: Path,
+        java_path: str,
+    ) -> Optional[Path]:
+        """Return the server JAR to launch, downloading it if necessary."""
+        # Forge: run the installer if present, otherwise download it first
+        if config.server_type == "forge":
+            forge_installer = server_dir / "forge-installer.jar"
+            if not forge_installer.exists():
+                logger.info(f"Downloading Forge installer for {config.mc_version}...")
+                dl = await self.downloader.download("forge", config.mc_version, server_dir)
+                if not dl.success:
+                    logger.error(f"Forge installer download failed: {dl.error}")
+                    return None
+            if forge_installer.exists():
+                logger.info("Running Forge installer...")
+                install_proc = await asyncio.create_subprocess_exec(
+                    java_path,
+                    "-jar",
+                    str(forge_installer),
+                    "--installServer",
+                    cwd=str(server_dir),
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.STDOUT,
+                )
+                await install_proc.wait()
+                for jar in server_dir.glob("forge-*-server.jar"):
+                    return jar
+                for jar in server_dir.glob("run.jar"):
+                    return jar
+                return None
+
+        # Any existing server jar
+        for jar in server_dir.glob("server.jar"):
+            return jar
+
+        # Auto-download the server software
+        logger.info(
+            f"No server JAR found in {server_dir}; "
+            f"downloading {config.server_type} {config.mc_version}..."
+        )
+        result = await self.downloader.download(
+            config.server_type, config.mc_version, server_dir
+        )
+        if not result.success:
+            logger.error(f"Auto-download failed: {result.error}")
+            return None
+        return result.path
 
     def _make_output_handler(self, name: str):
         """Create an output handler for server console output."""
@@ -427,6 +467,7 @@ class ServerManager:
             "mode": config.mode,
             "type": config.server_type,
             "version": config.mc_version,
+            "description": config.description,
             "port": config.port,
             "memory": config.memory,
             "status": process.status.value if process else "stopped",

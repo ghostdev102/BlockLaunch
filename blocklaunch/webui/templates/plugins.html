@@ -5,6 +5,43 @@
 {% block content %}
 <h1 style="margin-bottom: 1.5rem;">🔌 Plugin Browser</h1>
 
+<!-- Server selector -->
+<div class="card">
+    <div style="display: flex; gap: 0.5rem; align-items: end;">
+        <div class="form-group" style="flex: 1; margin-bottom: 0;">
+            <label>Server</label>
+            <select id="server-select" onchange="changeServer()">
+                {% for server in servers %}
+                <option value="{{ server.name }}" {% if server.name == selected_server %}selected{% endif %}>{{ server.name }}</option>
+                {% else %}
+                <option value="">No servers — create one first</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button class="btn btn-outline" onclick="reloadInstalled()">🔄 Installed</button>
+    </div>
+</div>
+
+<!-- Installed plugins -->
+<div class="card" id="installed-section">
+    <div class="card-header">
+        <span class="card-title">📦 Installed Plugins <small id="installed-server-label"></small></span>
+    </div>
+    <div id="installed-list">
+        {% for plugin in installed %}
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+            <div>
+                <strong>{{ plugin.filename or plugin.plugin_id }}</strong>
+                <span class="badge badge-premium" style="margin-left: 0.5rem;">{{ plugin.source }}</span>
+            </div>
+            <button class="btn btn-sm btn-error" onclick="uninstallPlugin('{{ plugin.plugin_id }}')">🗑 Remove</button>
+        </div>
+        {% else %}
+        <p style="color: var(--text-secondary);">No plugins installed on this server yet.</p>
+        {% endfor %}
+    </div>
+</div>
+
 <!-- Search -->
 <div class="card">
     <div style="display: flex; gap: 0.5rem; align-items: end;">
@@ -34,11 +71,60 @@
 
 {% block extra_scripts %}
 <script>
+const SERVERS = {{ servers | map(attribute='name') | list | tojson }};
+let CURRENT_SERVER = '{{ selected_server or "" }}';
+
+function currentServer() {
+    const sel = document.getElementById('server-select');
+    return sel && sel.value ? sel.value : CURRENT_SERVER;
+}
+
+function changeServer() {
+    window.location.href = '/plugins/' + encodeURIComponent(currentServer());
+}
+
+async function reloadInstalled() {
+    const server = currentServer();
+    if (!server) { showToast('No server selected', 'warning'); return; }
+    const list = await fetch(`/api/plugins/installed/${encodeURIComponent(server)}`).then(r => r.json());
+    const div = document.getElementById('installed-list');
+    if (!list.length) {
+        div.innerHTML = '<p style="color: var(--text-secondary);">No plugins installed on this server yet.</p>';
+        return;
+    }
+    div.innerHTML = list.map(p => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid var(--border);">
+            <div>
+                <strong>${p.filename || p.plugin_id}</strong>
+                <span class="badge badge-premium" style="margin-left: 0.5rem;">${p.source}</span>
+            </div>
+            <button class="btn btn-sm btn-error" onclick="uninstallPlugin('${p.plugin_id}')">🗑 Remove</button>
+        </div>
+    `).join('');
+}
+
+async function uninstallPlugin(pluginId) {
+    const server = currentServer();
+    if (!server) { showToast('No server selected', 'warning'); return; }
+    const resp = await fetch('/api/plugins/uninstall', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ server_name: server, plugin_id: pluginId })
+    });
+    const result = await resp.json();
+    showToast(result.success ? '✅ Plugin removed!' : '❌ ' + (result.error || 'Failed'), result.success ? 'success' : 'error');
+    if (result.success) reloadInstalled();
+}
+
 async function searchPlugins() {
     const query = document.getElementById('plugin-search').value.trim();
     const source = document.getElementById('plugin-source').value;
     const resultsDiv = document.getElementById('plugin-results');
 
+    if (!currentServer()) {
+        showToast('No server available. Create one first!', 'error');
+        return;
+    }
     if (!query) {
         showToast('Please enter a search query', 'warning');
         return;
@@ -104,21 +190,8 @@ async function searchPlugins() {
 }
 
 async function installPlugin(pluginId, source) {
-    // Ask which server to install to
-    const servers = await fetch('/api/servers').then(r => r.json());
-    if (!servers.length) {
-        showToast('No servers available. Create one first!', 'error');
-        return;
-    }
-
-    const serverName = prompt(`Install to which server?\n\nAvailable: ${servers.map(s => s.name).join(', ')}`);
-    if (!serverName) return;
-
-    const server = servers.find(s => s.name === serverName);
-    if (!server) {
-        showToast('Server not found!', 'error');
-        return;
-    }
+    const serverName = currentServer();
+    if (!serverName) { showToast('No server available. Create one first!', 'error'); return; }
 
     showToast('⏳ Installing plugin...', 'info');
 
@@ -134,6 +207,7 @@ async function installPlugin(pluginId, source) {
         });
         const result = await resp.json();
         showToast(result.success ? '✅ Plugin installed!' : '❌ ' + (result.error || 'Failed'), result.success ? 'success' : 'error');
+        if (result.success) reloadInstalled();
     } catch (e) {
         showToast('❌ Install failed: ' + e.message, 'error');
     }

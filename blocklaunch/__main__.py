@@ -60,13 +60,14 @@ def tui() -> None:
               type=click.Choice(["vanilla", "paper", "spigot", "forge", "fabric"]),
               default="paper", help="Server software type.")
 @click.option("--memory", default="2G", help="Max memory allocation (e.g., 2G, 4G).")
+@click.option("--description", default="", help="Short description shown in the dashboard.")
 @click.option("--port", "-p", default=25565, type=int, help="Server port.")
 @click.option("--eula", is_flag=True, help="Accept Minecraft EULA automatically.")
 @click.option("--directory", "-d", default=None, help="Server directory.")
 @click.option("--skip-java-check", is_flag=True, help="Skip Java validation (for testing).")
 @click.option("--skip-download", is_flag=True, help="Skip JAR download (creates config only).")
-def create(name: str, mode: str, version: str, server_type: str, memory: str,
-           port: int, eula: bool, directory: Optional[str],
+def create(name: str, mode: str, version: str, server_type: str, description: str,
+           memory: str, port: int, eula: bool, directory: Optional[str],
            skip_java_check: bool, skip_download: bool) -> None:
     """Create a new Minecraft server."""
     from blocklaunch.server.manager import ServerManager
@@ -78,6 +79,7 @@ def create(name: str, mode: str, version: str, server_type: str, memory: str,
         mode=mode,
         mc_version=version,
         server_type=server_type,
+        description=description,
         memory=memory,
         port=port,
         accept_eula=eula,

@@ -43,6 +43,7 @@ class ServerDetailScreen(Screen):
             )
 
             yield Static("", id="status")
+            yield Footer()
 
     def on_mount(self) -> None:
         self._refresh()
@@ -61,6 +62,8 @@ class ServerDetailScreen(Screen):
             f"  Memory:    {self._status.get('memory', 'N/A')}",
             f"  Status:    {self._status.get('status', 'N/A').upper()}",
         ]
+        if self._status.get("description"):
+            lines.append(f"  Desc:      {self._status.get('description')}")
 
         if self._status.get("pid"):
             lines.append(f"  PID:       {self._status.get('pid', 'N/A')}")

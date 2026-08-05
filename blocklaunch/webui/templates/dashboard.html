@@ -24,6 +24,9 @@
             <span>🎯 {{ server.version }}</span>
             <span>🔌 :{{ server.port }}</span>
         </div>
+        {% if server.description %}
+        <div style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">{{ server.description }}</div>
+        {% endif %}
         <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
             <span class="badge badge-{{ server.status }}">{{ server.status }}</span>
             {% if server.memory %}

@@ -22,6 +22,7 @@ class CreateServerRequest(BaseModel):
     mode: str = Field(..., pattern=r"^(premium|cracked|eaglercraft)$")
     server_type: str = Field(default="paper", pattern=r"^(vanilla|paper|spigot|forge|fabric)$")
     mc_version: str = Field(default="1.20.4")
+    description: str = Field(default="", max_length=200)
     memory: str = Field(default="2G")
     port: int = Field(default=25565, ge=1, le=65535)
     accept_eula: bool = Field(default=True)
@@ -63,6 +64,7 @@ async def create_server(body: CreateServerRequest, request: Request) -> dict[str
         mode=body.mode,
         mc_version=body.mc_version,
         server_type=body.server_type,
+        description=body.description,
         memory=body.memory,
         port=body.port,
         accept_eula=body.accept_eula,
@@ -180,8 +182,8 @@ async def dashboard(request: Request):
     templates = request.app.state.templates
     manager: ServerManager = request.app.state.server_manager
     servers = manager.list_servers()
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request, "servers": servers, "page": "dashboard"
+    return templates.TemplateResponse(request, "dashboard.html", {
+        "servers": servers, "page": "dashboard"
     })
 
 
@@ -191,8 +193,8 @@ async def server_detail(name: str, request: Request):
     templates = request.app.state.templates
     manager: ServerManager = request.app.state.server_manager
     status = manager.get_server_status(name)
-    return templates.TemplateResponse("server_detail.html", {
-        "request": request, "server": status, "page": "server"
+    return templates.TemplateResponse(request, "server_detail.html", {
+        "server": status, "page": "server"
     })
 
 
@@ -200,8 +202,8 @@ async def server_detail(name: str, request: Request):
 async def create_page(request: Request):
     """Create server page."""
     templates = request.app.state.templates
-    return templates.TemplateResponse("create_server.html", {
-        "request": request, "page": "create"
+    return templates.TemplateResponse(request, "create_server.html", {
+        "page": "create"
     })
 
 
@@ -220,15 +222,29 @@ async def players_page(name: str, request: Request):
         overview = pm.get_player_overview()
     else:
         overview = {"ops": [], "whitelist": [], "banned_players": [], "banned_ips": []}
-    return templates.TemplateResponse("players.html", {
-        "request": request, "server_name": name, "overview": overview, "page": "players"
+    return templates.TemplateResponse(request, "players.html", {
+        "server_name": name, "overview": overview, "page": "players"
     })
 
 
-@page_router.get("/plugins", response_class=HTMLResponse)
-async def plugins_page(request: Request):
-    """Plugin browser page."""
+@page_router.get("/plugins")
+@page_router.get("/plugins/{server_name}")
+async def plugins_page(request: Request, server_name: Optional[str] = None):
+    """Plugin browser page (optionally scoped to a server)."""
     templates = request.app.state.templates
-    return templates.TemplateResponse("plugins.html", {
-        "request": request, "page": "plugins"
+    manager: ServerManager = request.app.state.server_manager
+    servers = manager.list_servers()
+    from blocklaunch.plugins.manager import PluginManager
+    pm = PluginManager(request.app.state.settings)
+
+    installed = []
+    if server_name:
+        installed = pm.list_installed(server_name)
+    elif servers:
+        server_name = servers[0]["name"]
+        installed = pm.list_installed(server_name)
+
+    return templates.TemplateResponse(request, "plugins.html", {
+        "servers": servers, "selected_server": server_name,
+        "installed": installed, "page": "plugins",
     })
